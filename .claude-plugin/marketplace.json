@@ -1,0 +1,15 @@
+{
+  "name": "vera-town",
+  "owner": {
+    "name": "Vera Town"
+  },
+  "description": "Vera Town: un pueblo pixel art para ver, hablar y delegar a tus agentes de Claude.",
+  "plugins": [
+    {
+      "name": "vera-town",
+      "source": "./plugin/vera-town",
+      "description": "Tus agentes de Claude como aldeanos de un pueblo pixel art: mirá qué hacen, hablales, aprobá permisos y delegá tareas. Todo local.",
+      "version": "0.1.0"
+    }
+  ]
+}
