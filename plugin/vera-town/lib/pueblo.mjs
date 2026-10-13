@@ -89,6 +89,8 @@ var DATA = process.env.VERA_TOWN_DATA ?? join2(homedir(), ".vera-town");
 var PORT = Number(process.env.VERA_TOWN_PORT ?? 8787);
 var URL_ = `http://localhost:${PORT}`;
 var PID = join2(DATA, "server.pid");
+var RUNTIME = join2(DATA, "runtime");
+var SDK_DIR = join2(RUNTIME, "node_modules", "@anthropic-ai", "claude-agent-sdk");
 var LOG = join2(DATA, "server.log");
 var WIN = process.platform === "win32";
 var say = (s) => console.log(s);
@@ -114,6 +116,26 @@ function findClaude(env = process.env) {
   }
   return void 0;
 }
+function ensureSdk() {
+  const pkg = join2(SDK_DIR, "package.json");
+  const ok = () => existsSync2(pkg) && JSON.parse(readFileSync(pkg, "utf8")).version === "0.3.296";
+  if (!ok()) {
+    say(`Instalando el Agent SDK de Claude ${"0.3.296"} (solo la primera vez)\u2026`);
+    mkdirSync2(RUNTIME, { recursive: true });
+    if (!existsSync2(join2(RUNTIME, "package.json"))) writeFileSync2(join2(RUNTIME, "package.json"), '{ "private": true }\n');
+    const r = spawnSync("npm", ["install", `@anthropic-ai/claude-agent-sdk@${"0.3.296"}`, "--omit=optional", "--no-audit", "--no-fund", "--loglevel=error"], {
+      cwd: RUNTIME,
+      stdio: ["ignore", "ignore", "pipe"],
+      encoding: "utf8",
+      shell: WIN
+    });
+    if (r.status !== 0 || !ok()) {
+      say(`\u26A0 No pude instalar el Agent SDK con npm${r.stderr ? `: ${r.stderr.trim().split("\n").slice(-3).join(" ")}` : ""}. El pueblo funciona para mirar, pero no para crear aldeanos.`);
+      return void 0;
+    }
+  }
+  return join2(SDK_DIR, "sdk.mjs");
+}
 function openBrowser(url) {
   const [cmd2, args] = WIN ? ["cmd", ["/c", "start", '""', url]] : process.platform === "darwin" ? ["open", [url]] : ["xdg-open", [url]];
   try {
@@ -138,6 +160,7 @@ async function start(open) {
   }
   mkdirSync2(DATA, { recursive: true });
   const claude = findClaude();
+  const sdk = ensureSdk();
   const out = openSync(LOG, "a");
   const child = spawn(process.execPath, [join2(ROOT, "server", "server.mjs")], {
     detached: true,
@@ -150,7 +173,8 @@ async function start(open) {
       VERA_TOWN_PORT: String(PORT),
       VERA_TOWN_CLIENT: join2(ROOT, "client"),
       VERA_TOWN_VOICE_DIR: join2(DATA, "voice"),
-      ...claude ? { VERA_TOWN_CLAUDE: claude } : {}
+      ...claude ? { VERA_TOWN_CLAUDE: claude } : {},
+      ...sdk ? { VERA_TOWN_SDK: sdk } : {}
     }
   });
   child.unref();
@@ -189,6 +213,7 @@ async function status() {
     `pueblo: ${up ? `abierto en ${URL_}` : "apagado (/pueblo para abrirlo)"}`,
     `datos: ${DATA}`,
     `claude: ${claude ?? "no encontrado (defin\xED VERA_TOWN_CLAUDE)"}`,
+    `Agent SDK: ${existsSync2(join2(SDK_DIR, "package.json")) ? "instalado" : "se instala en el primer /pueblo"}`,
     `voz: ${existsSync2(join2(DATA, "voice", "voices", "index.json")) ? "instalada" : "no instalada (/pueblo-voz)"}`
   ].join("\n"));
 }

@@ -3,9 +3,9 @@
 El código de Vera Town es MIT (ver LICENSE). Este plugin incluye, compilados adentro, los paquetes de abajo:
 cada uno mantiene su propia licencia.
 
-- **@anthropic-ai/claude-agent-sdk** no es software libre: © Anthropic PBC, uso sujeto a sus términos
-  (https://code.claude.com/docs/en/legal-and-compliance). El ejecutable de Claude Code no viaja en el plugin:
-  se usa el que tiene instalado cada persona.
+- **@anthropic-ai/claude-agent-sdk** (© Anthropic PBC, uso sujeto a sus términos:
+  https://code.claude.com/docs/en/legal-and-compliance) **no viaja en el plugin**: `/pueblo` lo instala desde npm
+  en `~/.vera-town/runtime` la primera vez. Tampoco viaja el ejecutable de Claude Code: se usa el de cada persona.
 - **Pixelify Sans** (tipografía, `client/fonts`): SIL Open Font License 1.1, © The Pixelify Sans Project Authors.
 - **Tiny Town** de Kenney (tiles, `client/assets/kenney-tiny-town`): CC0.
 - La voz (Whisper, voces Piper, onnxruntime) no viaja en el plugin: la baja /pueblo-voz de sus fuentes oficiales,
@@ -13,7 +13,6 @@ cada uno mantiene su propia licencia.
 
 | Paquete | Versión | Licencia |
 |---|---|---|
-| @anthropic-ai/claude-agent-sdk | 0.3.296 | SEE LICENSE IN README.md |
 | @fastify/accept-negotiator | 2.1.1 | MIT |
 | @fastify/ajv-compiler | 4.0.7 | MIT |
 | @fastify/deepmerge | 3.2.2 | MIT |
@@ -87,12 +86,6 @@ cada uno mantiene su propia licencia.
 | ws | 8.22.0 | MIT |
 | zod | 3.25.76 | MIT |
 | zod | 4.6.6 | MIT |
-
-## @anthropic-ai/claude-agent-sdk 0.3.296
-
-```
-© Anthropic PBC. All rights reserved. Use is subject to the Legal Agreements outlined here: https://code.claude.com/docs/en/legal-and-compliance.
-```
 
 ## @fastify/accept-negotiator 2.1.1
 
