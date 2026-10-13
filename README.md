@@ -7,15 +7,29 @@ delegá tareas. Todo corre en tu máquina. Versión 0.1.0.
 
 - Claude Code (con tu propia cuenta: los aldeanos del pueblo usan tu `claude`).
 - Node.js 20 o más nuevo.
-- Acceso a este repositorio (OCI DevOps) desde git: si `git clone https://devops.scmservice.sa-saopaulo-1.oci.oraclecloud.com/namespaces/grg7fa7ww9p4/projects/vera/repositories/vera-town` te anda, el plugin también.
+- Acceso a este repositorio (OCI DevOps) desde git: si `git clone https://devops.scmservice.sa-saopaulo-1.oci.oraclecloud.com/namespaces/grg7fa7ww9p4/projects/vera/repositories/vera-town.git` te anda, el plugin también.
 
 ## Instalar
 
-En Claude Code:
+La pantalla de plugins de la app de Claude solo acepta GitHub, GitLab y Bitbucket: con OCI se instala desde
+una terminal (sirve la terminal de la propia app de escritorio). Claude Code clona sin poder pedir contraseña,
+así que primero guardá tus credenciales de git para este repo (te pide usuario y Auth Token una vez):
 
 ```
-/plugin marketplace add https://devops.scmservice.sa-saopaulo-1.oci.oraclecloud.com/namespaces/grg7fa7ww9p4/projects/vera/repositories/vera-town
-/plugin install vera-town@vera-town
+git ls-remote https://devops.scmservice.sa-saopaulo-1.oci.oraclecloud.com/namespaces/grg7fa7ww9p4/projects/vera/repositories/vera-town.git
+```
+
+Después:
+
+```
+claude plugin marketplace add https://devops.scmservice.sa-saopaulo-1.oci.oraclecloud.com/namespaces/grg7fa7ww9p4/projects/vera/repositories/vera-town.git
+claude plugin install vera-town@vera-town
+```
+
+Si ya entrás a OCI por SSH, podés evitar el token haciendo que git use tu SSH para esta dirección:
+
+```
+git config --global url."ssh://<tu alias o host SSH>/namespaces/grg7fa7ww9p4/".insteadOf "https://devops.scmservice.sa-saopaulo-1.oci.oraclecloud.com/namespaces/grg7fa7ww9p4/"
 ```
 
 Abrí una sesión nueva (los hooks se cargan al arrancar) y escribí `/pueblo`.
