@@ -9,7 +9,7 @@
       "name": "vera-town",
       "source": "./plugin/vera-town",
       "description": "Tus agentes de Claude como aldeanos de un pueblo pixel art: mirá qué hacen, hablales, aprobá permisos y delegá tareas. Todo local.",
-      "version": "0.1.0"
+      "version": "0.1.1"
     }
   ]
 }

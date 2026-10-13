@@ -93,7 +93,7 @@ Pedile cualquier cosa a Claude en esa sesión y vas a ver a tu aldeano moverse.
 | `/pueblo-estado` | Te dice si está prendido, dónde guarda los datos y si tiene voz |
 | `/pueblo-voz` | Instala la voz, para hablarle y que te responda en voz alta |
 
-La voz es opcional. Baja unos 370 MB una sola vez y después funciona sin internet. Escribí `/pueblo-voz todas` si querés las cinco voces en lugar de tres.
+La voz es opcional. `/pueblo-voz` instala las dos partes: el "oído", que entiende lo que decís cuando mantenés apretado el micrófono, y las voces con las que te contestan. Baja unos 370 MB una sola vez y después funciona sin internet. Sin eso, el micrófono no puede transcribir nada, y el pueblo te lo avisa. Escribí `/pueblo-voz todas` si querés las cinco voces en lugar de tres.
 
 ---
 
@@ -105,6 +105,7 @@ La voz es opcional. Baja unos 370 MB una sola vez y después funciona sin intern
 - **Click en la Alcaldía** para las recetas: tareas armadas como "revisá los cambios" o "corré los tests y arreglá lo que falle".
 - **El tablón de la plaza** es una lista de tareas que los aldeanos van tomando de a una.
 - **La tecla C** te pone a caminar por el pueblo con WASD. Con **E** hablás con quien tengas al lado.
+- **Si un aldeano se traba**, hacé click derecho sobre él y elegí **⛔ Detener**. A los del pueblo los frena al instante; a tus sesiones de la terminal o de la app, en su próximo paso. Si quedó un aldeano "fantasma" de una sesión que ya cerraste, **👻 Sacar del pueblo** lo saca.
 - **🏘 Proyectos**: ahí aparecen las carpetas donde usaste Claude Code. Mirar es automático, pero para que los aldeanos del pueblo trabajen en un proyecto lo tenés que habilitar acá.
 
 ---
@@ -122,6 +123,9 @@ Pasa lo mismo que con el comando: solo aparecen las sesiones abiertas después d
 
 **Se abrió el pueblo pero no puedo crear aldeanos.**
 Corré `/pueblo-estado`. Si dice que no encontró `claude` o el SDK, probá cerrar el pueblo con `/pueblo-parar` y volver a abrirlo con `/pueblo` (con internet, la primera vez).
+
+**Mantengo apretado para hablar, parece que me escucha, pero no aparece el texto.**
+Fijate qué dice arriba a la izquierda al soltar. Si pide instalar la voz, corré `/pueblo-voz` y recargá la página. Mientras hablás aparece una barrita verde: si no se mueve, el navegador está usando otro micrófono o está silenciado (el ícono a la izquierda de la dirección te deja elegir cuál).
 
 **Quiero ver qué pasó por dentro.**
 Hay un registro en la carpeta `.vera-town` de tu usuario, en el archivo `server.log`.
@@ -147,4 +151,4 @@ Código y novedades: https://github.com/friegabriel/vera-town
 
 ---
 
-Versión 0.1.0 · Licencia MIT (ver LICENSE) · Licencias de terceros en `plugin/vera-town/THIRD_PARTY_LICENSES.md`
+Versión 0.1.1 · Licencia MIT (ver LICENSE) · Licencias de terceros en `plugin/vera-town/THIRD_PARTY_LICENSES.md`

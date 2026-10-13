@@ -55397,7 +55397,11 @@ var ClientCommandSchema = external_exports.discriminatedUnion("type", [
   external_exports.object({ type: external_exports.literal("board.clear") }),
   external_exports.object({ type: external_exports.literal("board.workers"), n: external_exports.number().int().min(0).max(6) }),
   external_exports.object({ type: external_exports.literal("recipe.delete"), id: external_exports.string() }),
-  external_exports.object({ type: external_exports.literal("agent.stop"), agentId: external_exports.string() })
+  external_exports.object({ type: external_exports.literal("agent.stop"), agentId: external_exports.string() }),
+  /** detener: interrumpe a un aldeano del pueblo o frena una sesión de terminal en su próximo paso */
+  external_exports.object({ type: external_exports.literal("agent.halt"), agentId: external_exports.string() }),
+  /** sacar del pueblo a un aldeano fantasma (sesión que se cerró sin avisar) */
+  external_exports.object({ type: external_exports.literal("agent.remove"), agentId: external_exports.string() })
 ]);
 
 // apps/server/src/agents/hub.ts
@@ -55751,6 +55755,8 @@ function fromClaudeHook(p, ts = Date.now(), source = "claude-code") {
 }
 function hookOutput(reply) {
   switch (reply.kind) {
+    case "halt":
+      return { continue: false, stopReason: reply.reason };
     case "inbox":
       return {
         decision: "block",
@@ -76085,6 +76091,12 @@ function mayorOptions(api, model) {
         async ({ tarea, carpeta, subcarpeta, apodo }) => text(api.spawnAgent(tarea, carpeta, subcarpeta, apodo))
       ),
       tool(
+        "detener_agente",
+        "Detiene a un aldeano trabado: interrumpe a uno del pueblo o frena una sesi\xF3n de terminal en su pr\xF3ximo paso (requiere confirmaci\xF3n de la persona).",
+        { aldeano: ref },
+        async ({ aldeano }) => text(await api.haltAgent(aldeano))
+      ),
+      tool(
         "ver_recetas",
         "Lista las recetas de la Alcald\xEDa: tareas comunes listas para mandarle a un aldeano nuevo.",
         {},
@@ -76128,6 +76140,8 @@ function mayorActionTitle(tool2, input2) {
       return `El Alcalde quiere responderle a ${a}: \xAB${String(input2.respuesta ?? "")}\xBB`;
     case "crear_agente":
       return `El Alcalde quiere crear un aldeano${input2.apodo ? ` (${String(input2.apodo)})` : ""}: \xAB${String(input2.tarea ?? "")}\xBB`;
+    case "detener_agente":
+      return `El Alcalde quiere detener a ${a}`;
     case "usar_receta":
       return `El Alcalde quiere mandar un aldeano con la receta \xAB${String(input2.receta ?? "")}\xBB${input2.dato ? `: ${String(input2.dato)}` : ""}`;
     case "terminar_agente":
@@ -76138,6 +76152,7 @@ function mayorActionTitle(tool2, input2) {
 }
 
 // apps/server/src/agents/hub.ts
+var HALT_EVENTS = /* @__PURE__ */ new Set(["PreToolUse", "PostToolUse", "PostToolUseFailure", "PermissionRequest", "Notification", "SubagentStart", "SubagentStop", "PreCompact"]);
 var HOOK_WAIT_MS = Number(process.env.VERA_TOWN_HOOK_WAIT ?? 25) * 1e3;
 function detailFor(tool2, input2) {
   const s = (v) => typeof v === "string" ? v : void 0;
@@ -76200,6 +76215,8 @@ var AgentHub = class {
   /** bitácora del taller y la mina (la pone index.ts) */
   work;
   recipes;
+  /** sesiones de terminal que pediste detener: el próximo hook les contesta continue:false */
+  halts = /* @__PURE__ */ new Map();
   board;
   /** Tareas del tablón (para el parte diario). */
   boardTasks() {
@@ -76234,6 +76251,15 @@ var AgentHub = class {
         this.addMessage(cmd.agentId, { id: randomUUID4(), role: "user", text: cmd.text, ts: Date.now(), done: true });
         agent.send(cmd.text);
         return;
+      }
+      case "agent.halt":
+        return reply({ type: "notice", level: "info", text: await this.halt(cmd.agentId) });
+      case "agent.remove": {
+        const a = this.store.agents.get(cmd.agentId);
+        if (!a) return;
+        if (this.controllable(cmd.agentId)) return reply({ type: "notice", level: "error", text: "Ese aldeano est\xE1 trabajando: us\xE1 Detener o Terminar." });
+        this.store.ingest({ source: a.source, agentId: a.id, kind: "despawn", summary: "lo sacaste del pueblo" });
+        return reply({ type: "notice", level: "info", text: `${displayName(a)} sali\xF3 del pueblo.` });
       }
       case "chat.interrupt":
         await this.controllable(cmd.agentId)?.interrupt();
@@ -76484,6 +76510,13 @@ var AgentHub = class {
         });
         return notice || "Listo.";
       }),
+      haltAgent: async (ref) => {
+        try {
+          return await this.halt(this.find(ref).id);
+        } catch (err) {
+          return err instanceof Error ? err.message : String(err);
+        }
+      },
       stopAgent: guard((ref) => {
         const a = this.find(ref);
         const agent = this.agents.get(a.id);
@@ -76580,6 +76613,24 @@ var AgentHub = class {
   }
   // ---------- sesiones de terminal (hooks de Claude Code) ----------
   /** Sesión principal de Claude Code abierta en una terminal (no un subagente, no terminada). */
+  /**
+   * Detener: un aldeano del pueblo (o el Alcalde) se interrumpe ya; una sesión de terminal se frena en su
+   * próximo paso (el hook le contesta continue:false). Si está en medio de un comando largo, frena al terminarlo.
+   */
+  async halt(id) {
+    const a = this.store.agents.get(id);
+    const name = a ? displayName(a) : id;
+    const agent = this.controllable(id);
+    if (agent) {
+      await agent.interrupt();
+      return `Detuve a ${name}.`;
+    }
+    const sid = id.split(":")[0];
+    if (!this.isTerminal(sid)) return `${name} no se puede detener desde el pueblo.`;
+    this.halts.set(sid, Date.now());
+    this.addMessage(sid, { id: randomUUID4(), role: "system", text: "\u26D4 Pediste detenerla: se frena en su pr\xF3ximo paso.", ts: Date.now(), done: true });
+    return `${name} se va a detener en su pr\xF3ximo paso (si est\xE1 corriendo un comando largo, cuando termine).`;
+  }
   isTerminal(id) {
     const a = this.store.agents.get(id);
     return !!a && a.source === "claude-code" && !a.parentId && a.activity !== "done";
@@ -76609,6 +76660,16 @@ var AgentHub = class {
     if (!sid) return void 0;
     const id = p.agent_id ? `${sid}:${p.agent_id}` : sid;
     const main = !p.agent_id;
+    const halt = this.halts.get(sid);
+    if (halt !== void 0) {
+      const ev = p.hook_event_name ?? "";
+      if (Date.now() - halt > 15 * 6e4 || ev === "Stop" || ev === "UserPromptSubmit" || ev === "SessionEnd") this.halts.delete(sid);
+      else if (HALT_EVENTS.has(ev)) {
+        this.halts.delete(sid);
+        this.addMessage(sid, { id: randomUUID4(), role: "system", text: "\u26D4 Detenida desde el pueblo.", ts: Date.now(), done: true });
+        return { kind: "halt", reason: "La detuviste desde Vera Town." };
+      }
+    }
     switch (p.hook_event_name) {
       case "UserPromptSubmit":
         if (main && p.prompt) this.addMessage(sid, { id: randomUUID4(), role: "user", text: p.prompt, ts: Date.now(), done: true });

@@ -209,7 +209,7 @@ async function status() {
   const up = await alive();
   const claude = findClaude();
   say([
-    `Vera Town ${"0.1.0"}`,
+    `Vera Town ${"0.1.1"}`,
     `pueblo: ${up ? `abierto en ${URL_}` : "apagado (/pueblo para abrirlo)"}`,
     `datos: ${DATA}`,
     `claude: ${claude ?? "no encontrado (defin\xED VERA_TOWN_CLAUDE)"}`,
